@@ -12,72 +12,92 @@
   <main class="app">
     <header class="app-header">
       <h1 class="app-title">Task Board</h1>
-      <a class="board-link" href="board/" target="_blank" rel="noopener">電光掲示板を開く ↗</a>
+      <div class="app-header-right">
+        <div class="user-menu" id="user-menu" hidden>
+          <img class="user-avatar" id="user-avatar" alt="" hidden referrerpolicy="no-referrer" />
+          <span class="user-name" id="user-name"></span>
+          <button class="user-logout" id="logout-button" type="button" title="ログアウト" aria-label="ログアウト">⎋</button>
+        </div>
+        <a class="board-link" href="board/" target="_blank" rel="noopener">電光掲示板を開く ↗</a>
+      </div>
     </header>
 
-    <section class="card" aria-labelledby="add-title">
-      <h2 class="card-title" id="add-title">タスクを追加</h2>
-      <form class="add-form" id="add-form" autocomplete="off">
-        <input
-          id="add-input"
-          type="text"
-          name="task"
-          placeholder="例: 資料を確認する"
-          maxlength="200"
-          required
-          aria-label="タスク本文"
-        />
-        <button type="submit" id="add-button">追加</button>
-      </form>
+    <!-- Auth gate -->
+    <section class="card auth-gate" id="auth-gate" hidden>
+      <h2 class="auth-title">ログインが必要です</h2>
+      <p class="auth-desc">Google アカウントでログインすると、すべての端末で同じタスクが共有されます。</p>
+      <button class="google-btn" id="login-button" type="button">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+          <path fill="#EA4335" d="M12 11.8v3.4h4.8c-.2 1.2-1.4 3.5-4.8 3.5-2.9 0-5.2-2.4-5.2-5.3s2.4-5.3 5.2-5.3c1.6 0 2.7.7 3.4 1.3l2.3-2.2C16.3 6 14.4 5 12 5 7.9 5 4.6 8.4 4.6 12.5S7.9 20 12 20c4.2 0 7-3 7-7.2 0-.5 0-.8-.1-1.1H12z"/>
+        </svg>
+        Google でログイン
+      </button>
     </section>
 
-    <section class="card" aria-labelledby="list-title">
-      <h2 class="card-title" id="list-title">
-        未完了タスク<span class="task-count" id="task-count"></span>
-      </h2>
-      <ul class="task-list" id="task-list" role="list"></ul>
-    </section>
+    <!-- Signed-in UI -->
+    <div id="signed-in-ui" hidden>
+      <section class="card" aria-labelledby="add-title">
+        <h2 class="card-title" id="add-title">タスクを追加</h2>
+        <form class="add-form" id="add-form" autocomplete="off">
+          <input
+            id="add-input"
+            type="text"
+            name="task"
+            placeholder="例: 資料を確認する"
+            maxlength="200"
+            required
+            aria-label="タスク本文"
+          />
+          <button type="submit" id="add-button">追加</button>
+        </form>
+      </section>
 
-    <section class="card" aria-labelledby="settings-title">
-      <h2 class="card-title" id="settings-title">表示設定</h2>
-      <div class="settings-grid">
-        <div class="setting-row">
-          <label class="setting-label" for="speed-input">
-            <span>スクロール速度</span>
-            <strong><span id="speed-value">120</span> px/s</strong>
-          </label>
-          <input id="speed-input" type="range" min="20" max="400" step="5" />
-        </div>
+      <section class="card" aria-labelledby="list-title">
+        <h2 class="card-title" id="list-title">
+          未完了タスク<span class="task-count" id="task-count"></span>
+        </h2>
+        <ul class="task-list" id="task-list" role="list"></ul>
+      </section>
 
-        <div class="setting-row">
-          <label class="setting-label" for="size-input">
-            <span>文字サイズ</span>
-            <strong><span id="size-value">96</span> px</strong>
-          </label>
-          <input id="size-input" type="range" min="32" max="240" step="2" />
-        </div>
-
-        <div class="setting-row">
-          <span class="setting-label"><span>文字色</span></span>
-          <div class="color-presets" id="color-presets" role="group" aria-label="プリセット色"></div>
-        </div>
-
-        <div class="setting-row">
-          <span class="setting-label"><span>プレビュー</span></span>
-          <div class="preview">
-            <span class="preview-text" id="preview-text">資料を確認する　🆙　ジムに行く　🆙　メールを返信する</span>
+      <section class="card" aria-labelledby="settings-title">
+        <h2 class="card-title" id="settings-title">表示設定</h2>
+        <div class="settings-grid">
+          <div class="setting-row">
+            <label class="setting-label" for="speed-input">
+              <span>スクロール速度</span>
+              <strong><span id="speed-value">120</span> px/s</strong>
+            </label>
+            <input id="speed-input" type="range" min="20" max="400" step="5" />
           </div>
-        </div>
 
-        <button class="btn-reset" id="reset-button" type="button">既定値に戻す</button>
-      </div>
-    </section>
+          <div class="setting-row">
+            <label class="setting-label" for="size-input">
+              <span>文字サイズ</span>
+              <strong><span id="size-value">96</span> px</strong>
+            </label>
+            <input id="size-input" type="range" min="32" max="240" step="2" />
+          </div>
+
+          <div class="setting-row">
+            <span class="setting-label"><span>文字色</span></span>
+            <div class="color-presets" id="color-presets" role="group" aria-label="プリセット色"></div>
+          </div>
+
+          <div class="setting-row">
+            <span class="setting-label"><span>プレビュー</span></span>
+            <div class="preview">
+              <span class="preview-text" id="preview-text">資料を確認する　🆙　ジムに行く　🆙　メールを返信する</span>
+            </div>
+          </div>
+
+          <button class="btn-reset" id="reset-button" type="button">既定値に戻す</button>
+        </div>
+      </section>
+    </div>
   </main>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="js/storage.js"></script>
-  <script src="js/settings.js"></script>
-  <script src="js/admin.js"></script>
+  <script type="module" src="js/admin.js"></script>
 </body>
 </html>
