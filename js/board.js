@@ -1,7 +1,7 @@
-// Board page — seamless infinite horizontal scroll, gated by auth.
+// Board page — seamless infinite horizontal scroll, gated by URL spaceId.
 
 import * as settingsApi from "./settings.js";
-import { onAuth } from "./auth.js";
+import * as space from "./space.js";
 import { FirestoreTaskRepository } from "./firestore-repo.js";
 
 const $board = document.getElementById("board");
@@ -153,29 +153,24 @@ function showControls() {
   }, 2500);
 }
 
-// ---- Auth gating ----
-function onAuthChanged(user) {
-  if (unsubRepo) {
-    unsubRepo();
-    unsubRepo = null;
-  }
-  lastTaskSignature = null;
-  if (user) {
-    repo = new FirestoreTaskRepository(user.uid);
-    unsubRepo = repo.subscribe(refreshTasks);
-    refreshTasks();
-  } else {
-    repo = null;
-    renderIdle("──── ログインしてください ────", "管理画面で Google ログインすると、ここにタスクが表示されます");
-  }
-}
-
 // ---- init ----
 function init() {
   applyStyleVars(currentSettings);
-  renderIdle("...", "");
 
-  onAuth(onAuthChanged);
+  const spaceId = space.resolveExisting();
+  if (!spaceId) {
+    renderIdle(
+      "──── URL を確認してください ────",
+      "管理画面で URL を取得してから開いてください",
+    );
+    return;
+  }
+
+  repo = new FirestoreTaskRepository(spaceId);
+  renderIdle("...", "");
+  unsubRepo = repo.subscribe(refreshTasks);
+  refreshTasks();
+
   settingsApi.subscribe(onSettingsChanged);
 
   let resizeTimer = null;

@@ -40,97 +40,50 @@ body {
   flex-shrink: 0;
 }
 
-/* ---- User menu ---------------------------------------------------- */
-.user-menu {
+/* ---- Header buttons ----------------------------------------------- */
+.header-btn {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 4px 6px 4px 10px;
+  gap: 6px;
+  height: 38px;
+  padding: 0 12px;
   background: var(--surface);
+  color: var(--text);
   border: 1px solid var(--border);
   border-radius: 999px;
   font-size: 13px;
-  color: var(--text);
-  max-width: 220px;
-}
-
-.user-avatar {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  object-fit: cover;
-  flex-shrink: 0;
-}
-
-.user-name {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  min-width: 0;
-}
-
-.user-logout {
-  background: transparent;
-  border: none;
-  color: var(--text-dim);
-  font-size: 16px;
+  font-family: inherit;
   cursor: pointer;
-  width: 28px;
-  height: 28px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  flex-shrink: 0;
+  transition: background 0.15s;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.user-logout:hover {
-  color: var(--text);
-  background: var(--surface-2);
+.header-btn:hover,
+.header-btn:active { background: var(--surface-2); }
+
+.header-btn-icon {
+  font-size: 14px;
+  line-height: 1;
 }
 
-/* ---- Auth gate ---------------------------------------------------- */
-.auth-gate {
-  text-align: center;
-  padding: 32px 20px;
+/* ---- Hint card ---------------------------------------------------- */
+.hint-card {
+  padding: 14px 16px;
 }
 
-.auth-title {
-  font-size: 18px;
-  font-weight: 700;
-  margin: 0 0 8px;
-}
-
-.auth-desc {
+.hint-title {
   font-size: 13px;
+  color: var(--text);
+  margin: 0 0 4px;
+  font-weight: 500;
+}
+
+.hint-sub {
+  font-size: 12px;
   color: var(--text-dim);
-  margin: 0 0 20px;
+  margin: 0;
   line-height: 1.6;
 }
-
-.google-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  height: 48px;
-  padding: 0 20px;
-  background: #ffffff;
-  color: #1f1f1f;
-  border: 1px solid #dadce0;
-  border-radius: 24px;
-  font-size: 14px;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  cursor: pointer;
-  font-family: inherit;
-  transition: box-shadow 0.15s, background 0.15s;
-}
-
-.google-btn:hover { background: #f7f8f9; box-shadow: 0 1px 3px rgba(0,0,0,0.4); }
-.google-btn:active { background: #e8eaed; }
-.google-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-
-.google-btn svg { flex-shrink: 0; }
 
 .app-title {
   font-size: 22px;
@@ -456,11 +409,11 @@ input[type="color"] {
   .board-link { font-size: 12px; }
 }
 
-/* ---- User menu mobile ---- */
+/* ---- Header buttons mobile ---- */
 @media (max-width: 480px) {
-  .user-menu { max-width: 140px; padding: 3px 4px 3px 8px; font-size: 12px; }
-  .user-name { max-width: 80px; }
-  .user-avatar { width: 22px; height: 22px; }
-  .user-logout { width: 24px; height: 24px; font-size: 14px; }
-  .auth-gate { padding: 24px 16px; }
+  .header-btn { height: 36px; padding: 0 10px; font-size: 12px; gap: 4px; }
+  .header-btn-label { display: none; }  /* show only emoji icons on small screens */
+  .hint-card { padding: 12px 14px; }
+  .hint-title { font-size: 12px; }
+  .hint-sub { font-size: 11px; }
 }

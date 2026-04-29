@@ -1,7 +1,7 @@
-// FirestoreTaskRepository — implements the same interface as the legacy
-// LocalStorageTaskRepository: list, add, complete, remove, subscribe.
-// Tasks are stored at /users/{uid}/tasks/{taskId} and protected by
-// Firestore rules so only the owning user can read/write.
+// FirestoreTaskRepository — implements list / add / complete / remove / subscribe.
+// Tasks are stored at /spaces/{spaceId}/tasks/{taskId}. The spaceId acts as
+// an unguessable shared secret in the URL; Firestore rules enforce the
+// minimum-length check.
 
 import {
   collection,
@@ -30,10 +30,10 @@ function nowIso() {
 }
 
 export class FirestoreTaskRepository {
-  constructor(uid) {
-    if (!uid) throw new Error("uid required");
-    this.uid = uid;
-    this.col = collection(db, "users", uid, "tasks");
+  constructor(spaceId) {
+    if (!spaceId) throw new Error("spaceId required");
+    this.spaceId = spaceId;
+    this.col = collection(db, "spaces", spaceId, "tasks");
   }
 
   async list() {
@@ -75,7 +75,6 @@ export class FirestoreTaskRepository {
     await deleteDoc(doc(this.col, id));
   }
 
-  // Realtime listener; callback fires on any change. Returns unsubscribe fn.
   subscribe(callback) {
     return onSnapshot(this.col, () => callback(), (err) => {
       console.error("Firestore subscribe error:", err);
