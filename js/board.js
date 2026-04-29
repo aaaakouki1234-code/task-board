@@ -8,7 +8,7 @@
   const $fullscreenBtn = document.getElementById('fullscreen-btn');
 
   let currentSettings = settings.load();
-  let lastTaskSignature = '';
+  let lastTaskSignature = null;
 
   // ---- helpers ----
   function hexToRgb(hex) {
@@ -41,7 +41,9 @@
 
   // ---- render ----
   function renderIdle() {
-    $board.innerHTML = '<div class="idle">――― TASK BOARD ―――</div>';
+    $board.innerHTML =
+      '<div class="idle">――― TASK BOARD ―――' +
+      '<small>このデバイスにはまだタスクがありません</small></div>';
   }
 
   function renderTasks(tasks) {
@@ -50,7 +52,7 @@
       .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
 
     if (active.length === 0) {
-      lastTaskSignature = '';
+      lastTaskSignature = null;
       renderIdle();
       return;
     }
@@ -106,7 +108,7 @@
 
     if (sepChanged) {
       // Separator changed → rebuild content
-      lastTaskSignature = '';
+      lastTaskSignature = null;
       refreshTasks();
       return;
     }
@@ -164,7 +166,7 @@
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(() => {
         // Force rebuild for proper width-based copy expansion
-        lastTaskSignature = '';
+        lastTaskSignature = null;
         refreshTasks();
       }, 200);
     });

@@ -330,7 +330,29 @@ input[type="color"] {
 
 /* ---- Mobile-friendly tweaks --------------------------------------- */
 @media (max-width: 480px) {
+  body { padding: 12px; padding-bottom: 64px; }
+  .app-header { padding: 4px 0 16px; gap: 8px; }
   .app-title { font-size: 18px; }
-  .add-form input { font-size: 16px; }
+  .board-link { height: 36px; padding: 0 12px; font-size: 13px; }
+
+  .card { padding: 14px; border-radius: 10px; }
+  .card-title { font-size: 13px; margin: 0 0 10px; }
+
+  .add-form { gap: 6px; }
+  .add-form input { font-size: 16px; height: 48px; padding: 0 12px; }
+  .add-form button { height: 48px; padding: 0 14px; font-size: 15px; }
+
+  .task-item { padding: 10px; gap: 6px; }
   .task-text { font-size: 15px; }
+  .task-actions { gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+  .btn-icon { min-width: 56px; padding: 0 10px; font-size: 12px; height: 36px; }
+
+  .color-swatch { width: 40px; height: 40px; }  /* easier to tap */
+  input[type="color"] { width: 40px; height: 40px; }
+}
+
+/* ---- Very narrow (<360px) ---- */
+@media (max-width: 360px) {
+  .app-header { flex-wrap: wrap; }
+  .board-link { font-size: 12px; }
 }
