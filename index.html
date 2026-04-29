@@ -58,10 +58,21 @@
       </section>
 
       <section class="card" aria-labelledby="list-title">
-        <h2 class="card-title" id="list-title">
-          未完了タスク<span class="task-count" id="task-count"></span>
-        </h2>
+        <div class="task-tabs" role="tablist">
+          <button class="task-tab active" type="button" role="tab" data-tab="active" id="tab-active">
+            未完了<span class="task-count" id="task-count-active"></span>
+          </button>
+          <button class="task-tab" type="button" role="tab" data-tab="done" id="tab-done">
+            完了済み<span class="task-count" id="task-count-done"></span>
+          </button>
+        </div>
+        <div class="task-stats" id="task-stats" hidden></div>
         <ul class="task-list" id="task-list" role="list"></ul>
+        <div class="task-list-footer" id="task-list-footer" hidden>
+          <button class="btn-link-danger" id="clear-completed-button" type="button">
+            完了済みをすべて削除
+          </button>
+        </div>
       </section>
 
       <section class="card" aria-labelledby="settings-title">
@@ -89,9 +100,32 @@
           </div>
 
           <div class="setting-row">
+            <span class="setting-label"><span>文字の進行方向</span></span>
+            <div class="direction-picker" id="direction-picker" role="group" aria-label="文字の進行方向"></div>
+          </div>
+
+          <div class="setting-row">
+            <span class="setting-label"><span>行・列の数</span></span>
+            <div class="rows-picker" id="rows-picker" role="group" aria-label="行数"></div>
+          </div>
+
+          <div class="setting-row setting-row-inline">
+            <label class="setting-toggle">
+              <input id="alternate-input" type="checkbox" />
+              <span>1行ごとに反対方向にスクロール</span>
+            </label>
+          </div>
+
+          <div class="setting-row setting-row-inline">
+            <span class="setting-label setting-label-inline"><span>背景色</span></span>
+            <input id="bg-color-input" type="color" value="#000000" aria-label="背景色" />
+            <button class="btn-link" id="bg-color-reset" type="button">黒に戻す</button>
+          </div>
+
+          <div class="setting-row">
             <span class="setting-label"><span>プレビュー</span></span>
             <div class="preview">
-              <span class="preview-text" id="preview-text">資料を確認する　🆙　ジムに行く　🆙　メールを返信する</span>
+              <span class="preview-text" id="preview-text">資料を確認する　↑　ジムに行く　↑　メールを返信する</span>
             </div>
           </div>
 

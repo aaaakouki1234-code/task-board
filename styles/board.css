@@ -2,6 +2,8 @@
   --board-color: #ffb000;
   --board-size: 96px;
   --board-duration: 30s;
+  --rows: 1;
+  --bg-color: #000000;
 }
 
 html, body {
@@ -10,7 +12,7 @@ html, body {
   /* Use dynamic viewport height on supporting browsers (mobile address bar) */
   min-height: 100vh;
   min-height: 100dvh;
-  background: #000;
+  background: var(--bg-color);
   color: var(--board-color);
   overflow: hidden;
   cursor: none;
@@ -25,24 +27,43 @@ body.show-cursor { cursor: default; }
   position: fixed;
   inset: 0;
   display: flex;
-  align-items: center;
+  flex-direction: column;
   overflow: hidden;
-  background: #000;
+  background: var(--bg-color);
+  /* Capture all touch gestures (pinch, pan) so the browser doesn't
+     zoom the page while we resize the running text. */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Each row holds one scrolling track. With multi-row, rows stack
+   evenly along the cross-axis to fill the screen. */
+.row {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  overflow: hidden;
+  width: 100%;
+  position: relative;
 }
 
 .track {
   display: inline-flex;
-  white-space: nowrap;
   flex-shrink: 0;
-  animation: scroll var(--board-duration) linear infinite;
+  white-space: nowrap;
+  animation: scroll-left var(--board-duration) linear infinite;
   will-change: transform;
 }
 
 .track.paused { animation-play-state: paused; }
 
 .copy {
-  /* Cap font-size at 35% of viewport height so a single line always fits, even on small phones */
-  font-size: min(var(--board-size), 35vh);
+  /* Cap font-size at a fraction of viewport so text always fits one line.
+     Divide by --rows so multi-row layouts shrink proportionally. */
+  font-size: min(var(--board-size), calc(35vh / var(--rows, 1)));
   font-weight: 700;
   letter-spacing: 0.04em;
   color: var(--board-color);
@@ -53,9 +74,81 @@ body.show-cursor { cursor: default; }
   text-shadow: 0 0 8px rgba(var(--glow-rgb, 255, 176, 0), 0.35);
 }
 
-@keyframes scroll {
+/* ---- Direction: left (default, → moves left) ---- */
+@keyframes scroll-left {
   from { transform: translate3d(0, 0, 0); }
   to   { transform: translate3d(-50%, 0, 0); }
+}
+
+/* ---- Direction: right (text moves right) ---- */
+body[data-direction="right"] .track {
+  animation-name: scroll-right;
+}
+@keyframes scroll-right {
+  from { transform: translate3d(-50%, 0, 0); }
+  to   { transform: translate3d(0, 0, 0); }
+}
+
+/* ---- Alternate: even-indexed rows reverse their direction ---- */
+body[data-alternate="true"][data-direction="left"] .row.row-odd .track {
+  animation-name: scroll-right;
+}
+body[data-alternate="true"][data-direction="right"] .row.row-odd .track {
+  animation-name: scroll-left;
+}
+body[data-alternate="true"][data-direction="up"] .row.row-odd .track {
+  animation-name: scroll-down;
+}
+body[data-alternate="true"][data-direction="down"] .row.row-odd .track {
+  animation-name: scroll-up;
+}
+
+/* ---- Direction: up / down (vertical writing mode) ---- */
+body[data-direction="up"] .board,
+body[data-direction="down"] .board {
+  flex-direction: row;
+}
+
+body[data-direction="up"] .row,
+body[data-direction="down"] .row {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  height: 100%;
+  width: auto;
+}
+
+body[data-direction="up"] .track,
+body[data-direction="down"] .track {
+  display: flex;
+  flex-direction: column;
+  width: max-content;
+}
+
+body[data-direction="up"] .copy,
+body[data-direction="down"] .copy {
+  /* Japanese vertical writing — text reads top-to-bottom */
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  padding-right: 0;
+  padding-bottom: 1em;
+  font-size: min(var(--board-size), calc(35vw / var(--rows, 1)));
+}
+
+body[data-direction="up"] .track {
+  animation-name: scroll-up;
+}
+body[data-direction="down"] .track {
+  animation-name: scroll-down;
+}
+
+@keyframes scroll-up {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(0, -50%, 0); }
+}
+@keyframes scroll-down {
+  from { transform: translate3d(0, -50%, 0); }
+  to   { transform: translate3d(0, 0, 0); }
 }
 
 /* ---- Idle state ---- */

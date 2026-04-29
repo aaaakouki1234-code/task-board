@@ -30,6 +30,24 @@ function applyStyleVars(s) {
   root.style.setProperty("--board-color", s.color);
   root.style.setProperty("--board-size", s.fontSize + "px");
   root.style.setProperty("--glow-rgb", hexToRgb(s.color));
+  root.style.setProperty("--rows", String(clampRows(s.rows)));
+  root.style.setProperty("--bg-color", s.bgColor || "#000000");
+}
+
+function clampRows(n) {
+  const v = Number(n);
+  if (!Number.isFinite(v)) return 1;
+  return Math.max(1, Math.min(4, Math.round(v)));
+}
+
+function applyDirection(s) {
+  const dir = s.direction || "left";
+  document.body.dataset.direction = dir;
+  document.body.dataset.alternate = s.alternate ? "true" : "false";
+}
+
+function isVertical(dir) {
+  return dir === "up" || dir === "down";
 }
 
 function buildSignature(tasks) {
@@ -40,17 +58,70 @@ function buildSignature(tasks) {
     .join("|");
 }
 
-function updateAnimationDuration(track, copyEl) {
-  const copyWidth = copyEl.offsetWidth;
-  if (copyWidth <= 0) return;
-  const duration = copyWidth / Math.max(currentSettings.speed, 1);
+function updateAnimationDuration(track, copyEl, rowIndex = 0, totalRows = 1) {
+  const vertical = isVertical(currentSettings.direction);
+  const length = vertical ? copyEl.offsetHeight : copyEl.offsetWidth;
+  if (length <= 0) return;
+  const duration = length / Math.max(currentSettings.speed, 1);
   track.style.animationDuration = duration.toFixed(2) + "s";
+  // Stagger phases so multi-row scrolls don't all line up.
+  if (totalRows > 1) {
+    const offset = -(rowIndex / totalRows) * duration;
+    track.style.animationDelay = offset.toFixed(2) + "s";
+  } else {
+    track.style.animationDelay = "0s";
+  }
+}
+
+function refreshAllDurations() {
+  const rows = $board.querySelectorAll(".row");
+  const total = rows.length;
+  rows.forEach((row, i) => {
+    const track = row.querySelector(".track");
+    const copy = row.querySelector(".copy");
+    if (track && copy) {
+      requestAnimationFrame(() => updateAnimationDuration(track, copy, i, total));
+    }
+  });
 }
 
 // ---- render ----
 function renderIdle(message, sub) {
   const small = sub ? `<small>${sub}</small>` : "";
   $board.innerHTML = `<div class="idle">${message}${small}</div>`;
+}
+
+function buildRow(baseText, rowIndex, totalRows) {
+  const row = document.createElement("div");
+  row.className = "row";
+  row.dataset.rowIndex = String(rowIndex);
+  if (rowIndex % 2 === 1) row.classList.add("row-odd");
+
+  const track = document.createElement("div");
+  track.className = "track";
+
+  const copy1 = document.createElement("span");
+  copy1.className = "copy";
+  copy1.textContent = baseText;
+  track.appendChild(copy1);
+  row.appendChild(track);
+
+  // Defer measurement until inserted in DOM
+  requestAnimationFrame(() => {
+    const vertical = isVertical(currentSettings.direction);
+    const viewLen = vertical ? window.innerHeight : window.innerWidth;
+    let copyLen = vertical ? copy1.offsetHeight : copy1.offsetWidth;
+    if (copyLen > 0 && copyLen < viewLen) {
+      const repeats = Math.ceil(viewLen / copyLen) + 1;
+      copy1.textContent = baseText.repeat(repeats);
+    }
+    const copy2 = copy1.cloneNode(true);
+    copy2.setAttribute("aria-hidden", "true");
+    track.appendChild(copy2);
+    updateAnimationDuration(track, copy1, rowIndex, totalRows);
+  });
+
+  return row;
 }
 
 function renderTasks(tasks) {
@@ -64,30 +135,15 @@ function renderTasks(tasks) {
     return;
   }
 
-  const sep = currentSettings.separator || "　🆙　";
+  const sep = currentSettings.separator || "　↑　";
   const baseText = active.map((t) => t.text).join(sep) + sep;
+  const totalRows = clampRows(currentSettings.rows);
 
-  const track = document.createElement("div");
-  track.className = "track";
-
-  const copy1 = document.createElement("span");
-  copy1.className = "copy";
-  copy1.textContent = baseText;
-  track.appendChild(copy1);
-  $board.replaceChildren(track);
-
-  requestAnimationFrame(() => {
-    const vw = window.innerWidth;
-    let copyWidth = copy1.offsetWidth;
-    if (copyWidth > 0 && copyWidth < vw) {
-      const repeats = Math.ceil(vw / copyWidth) + 1;
-      copy1.textContent = baseText.repeat(repeats);
-    }
-    const copy2 = copy1.cloneNode(true);
-    copy2.setAttribute("aria-hidden", "true");
-    track.appendChild(copy2);
-    updateAnimationDuration(track, copy1);
-  });
+  const frag = document.createDocumentFragment();
+  for (let i = 0; i < totalRows; i++) {
+    frag.appendChild(buildRow(baseText, i, totalRows));
+  }
+  $board.replaceChildren(frag);
 }
 
 async function refreshTasks() {
@@ -108,21 +164,22 @@ function onSettingsChanged(newSettings) {
   const speedChanged = newSettings.speed !== currentSettings.speed;
   const sizeChanged = newSettings.fontSize !== currentSettings.fontSize;
   const sepChanged = newSettings.separator !== currentSettings.separator;
+  const dirChanged = newSettings.direction !== currentSettings.direction;
+  const rowsChanged = clampRows(newSettings.rows) !== clampRows(currentSettings.rows);
+  const altChanged = newSettings.alternate !== currentSettings.alternate;
 
   currentSettings = newSettings;
   applyStyleVars(currentSettings);
+  applyDirection(currentSettings);
 
-  if (sepChanged) {
+  if (sepChanged || dirChanged || rowsChanged || altChanged) {
+    // These changes require a full re-layout.
     lastTaskSignature = null;
     refreshTasks();
     return;
   }
   if (sizeChanged || speedChanged) {
-    const track = $board.querySelector(".track");
-    const firstCopy = $board.querySelector(".copy");
-    if (track && firstCopy) {
-      requestAnimationFrame(() => updateAnimationDuration(track, firstCopy));
-    }
+    refreshAllDurations();
   }
 }
 
@@ -159,9 +216,72 @@ function showControls() {
   }, 2500);
 }
 
+// ---- Pinch / wheel resize ----
+const SIZE_MIN = 24;
+const SIZE_MAX = 320;
+let pinchStartDist = 0;
+let pinchStartSize = 0;
+let pinchSaveTimer = null;
+
+function clampSize(px) {
+  return Math.max(SIZE_MIN, Math.min(SIZE_MAX, Math.round(px)));
+}
+
+function setLiveSize(px) {
+  const next = clampSize(px);
+  if (next === currentSettings.fontSize) return;
+  currentSettings.fontSize = next;
+  document.documentElement.style.setProperty("--board-size", next + "px");
+  refreshAllDurations();
+  // Debounce persistence so we don't hammer localStorage during a pinch.
+  clearTimeout(pinchSaveTimer);
+  pinchSaveTimer = setTimeout(() => {
+    settingsApi.save({ fontSize: currentSettings.fontSize });
+  }, 200);
+}
+
+function distanceBetween(t1, t2) {
+  const dx = t1.clientX - t2.clientX;
+  const dy = t1.clientY - t2.clientY;
+  return Math.hypot(dx, dy);
+}
+
+function onTouchStart(e) {
+  if (e.touches.length === 2) {
+    pinchStartDist = distanceBetween(e.touches[0], e.touches[1]);
+    pinchStartSize = currentSettings.fontSize;
+    e.preventDefault();
+  }
+}
+
+function onTouchMove(e) {
+  if (e.touches.length === 2 && pinchStartDist > 0) {
+    const dist = distanceBetween(e.touches[0], e.touches[1]);
+    const scale = dist / pinchStartDist;
+    setLiveSize(pinchStartSize * scale);
+    e.preventDefault();
+  }
+}
+
+function onTouchEnd(e) {
+  if (e.touches.length < 2) {
+    pinchStartDist = 0;
+  }
+}
+
+function onWheel(e) {
+  // Ctrl+wheel (or pinch on trackpad which fires ctrlKey) → resize
+  if (!e.ctrlKey) return;
+  e.preventDefault();
+  const delta = -e.deltaY;
+  const factor = 1 + delta * 0.005;
+  setLiveSize(currentSettings.fontSize * factor);
+}
+
 // ---- init ----
 function init() {
   applyStyleVars(currentSettings);
+  applyDirection(currentSettings);
 
   const spaceId = space.resolveExisting();
   if (!spaceId) {
@@ -209,6 +329,13 @@ function init() {
 
   document.addEventListener("mousemove", showControls);
   document.addEventListener("touchstart", showControls, { passive: true });
+
+  // Pinch / Ctrl+wheel to resize the running text.
+  $board.addEventListener("touchstart", onTouchStart, { passive: false });
+  $board.addEventListener("touchmove", onTouchMove, { passive: false });
+  $board.addEventListener("touchend", onTouchEnd);
+  $board.addEventListener("touchcancel", onTouchEnd);
+  $board.addEventListener("wheel", onWheel, { passive: false });
 
   showControls();
 }

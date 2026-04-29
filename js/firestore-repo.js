@@ -13,6 +13,8 @@ import {
   onSnapshot,
   query,
   orderBy,
+  where,
+  writeBatch,
 } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
 import { db } from "./firebase-app.js";
 
@@ -71,8 +73,47 @@ export class FirestoreTaskRepository {
     });
   }
 
+  // Restore a completed task back to the active list (placed at the bottom).
+  async restore(id) {
+    const tasks = await this.list();
+    const maxOrder = tasks
+      .filter((t) => t.status === "active")
+      .reduce((m, t) => Math.max(m, Number(t.displayOrder) || 0), 0);
+    await updateDoc(doc(this.col, id), {
+      status: "active",
+      completedAt: null,
+      displayOrder: maxOrder + 1,
+    });
+  }
+
+  // Update arbitrary fields (currently used for editing text).
+  async updateText(id, text) {
+    const trimmed = String(text || "").trim();
+    if (!trimmed) throw new Error("タスク本文は必須です");
+    await updateDoc(doc(this.col, id), { text: trimmed });
+  }
+
+  // Swap displayOrder of two active tasks (used for up/down reordering).
+  async swapOrder(idA, orderA, idB, orderB) {
+    const batch = writeBatch(db);
+    batch.update(doc(this.col, idA), { displayOrder: orderB });
+    batch.update(doc(this.col, idB), { displayOrder: orderA });
+    await batch.commit();
+  }
+
   async remove(id) {
     await deleteDoc(doc(this.col, id));
+  }
+
+  // Bulk-delete all completed tasks.
+  async clearCompleted() {
+    const q = query(this.col, where("status", "==", "done"));
+    const snap = await getDocs(q);
+    if (snap.empty) return 0;
+    const batch = writeBatch(db);
+    snap.docs.forEach((d) => batch.delete(d.ref));
+    await batch.commit();
+    return snap.size;
   }
 
   subscribe(callback) {
