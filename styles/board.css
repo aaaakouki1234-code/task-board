@@ -1,0 +1,106 @@
+:root {
+  --board-color: #ffb000;
+  --board-size: 96px;
+  --board-duration: 30s;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  background: #000;
+  color: var(--board-color);
+  overflow: hidden;
+  cursor: none;
+}
+
+body.show-cursor { cursor: default; }
+
+.board {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  background: #000;
+}
+
+.track {
+  display: inline-flex;
+  white-space: nowrap;
+  flex-shrink: 0;
+  animation: scroll var(--board-duration) linear infinite;
+  will-change: transform;
+}
+
+.track.paused { animation-play-state: paused; }
+
+.copy {
+  font-size: var(--board-size);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--board-color);
+  line-height: 1;
+  padding-right: 1em;
+  font-feature-settings: "tnum" 1;
+  /* subtle glow like a station LED panel */
+  text-shadow: 0 0 8px rgba(var(--glow-rgb, 255, 176, 0), 0.35);
+}
+
+@keyframes scroll {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(-50%, 0, 0); }
+}
+
+/* ---- Idle state ---- */
+.idle {
+  width: 100%;
+  text-align: center;
+  font-size: clamp(24px, 4vw, 48px);
+  color: var(--board-color);
+  opacity: 0.5;
+  letter-spacing: 0.2em;
+}
+
+/* ---- Controls (auto-hide) ---- */
+.controls {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  gap: 8px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 10;
+}
+
+body.show-controls .controls { opacity: 1; }
+
+.ctrl-btn {
+  height: 36px;
+  padding: 0 12px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #ddd;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+}
+
+.ctrl-btn:hover { background: rgba(255, 255, 255, 0.15); }
+
+.hint {
+  position: fixed;
+  bottom: 12px;
+  left: 16px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.3);
+  letter-spacing: 0.1em;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 10;
+  pointer-events: none;
+}
+
+body.show-controls .hint { opacity: 1; }
