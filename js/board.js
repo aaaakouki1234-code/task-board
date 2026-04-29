@@ -6,6 +6,12 @@ import { FirestoreTaskRepository } from "./firestore-repo.js";
 
 const $board = document.getElementById("board");
 const $fullscreenBtn = document.getElementById("fullscreen-btn");
+const $backBtn = document.getElementById("back-btn");
+
+// Capture pre-load storage state so we can tell the owner (who has the
+// spaceId already saved on this device) from a recipient who opened a
+// shared link on a fresh device. Recipients lose the "管理画面" button.
+const previouslyStoredId = space.readFromStorage();
 
 let repo = null;
 let unsubRepo = null;
@@ -164,6 +170,13 @@ function init() {
       "管理画面で URL を取得してから開いてください",
     );
     return;
+  }
+
+  // Hide "管理画面" button for shared-link recipients (those whose
+  // localStorage didn't already contain this spaceId before page load).
+  const isOwner = previouslyStoredId === spaceId;
+  if (!isOwner && $backBtn) {
+    $backBtn.hidden = true;
   }
 
   repo = new FirestoreTaskRepository(spaceId);
