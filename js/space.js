@@ -46,23 +46,15 @@ export function syncUrl(id) {
   window.history.replaceState({}, "", url.toString());
 }
 
-// Resolve spaceId on the admin page: URL > storage > generate-new.
-// Always returns a valid id and ensures URL & storage are in sync.
-export function resolveOrCreate() {
-  let id = readFromUrl();
-  if (id) {
-    saveToStorage(id);
-    return { id, source: "url" };
-  }
-  id = readFromStorage();
-  if (id) {
-    syncUrl(id);
-    return { id, source: "storage" };
-  }
-  id = generateId();
+// Generate a brand-new spaceId, persist it, and navigate to the URL
+// that includes ?u=<id>. Replaces history so the welcome page isn't
+// in the back stack.
+export function createAndNavigate() {
+  const id = generateId();
   saveToStorage(id);
-  syncUrl(id);
-  return { id, source: "new" };
+  const url = new URL(window.location.href);
+  url.searchParams.set(PARAM, id);
+  window.location.replace(url.toString());
 }
 
 // Resolve spaceId on the board page: URL > storage. Never auto-creates.

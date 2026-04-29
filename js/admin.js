@@ -1,10 +1,18 @@
 // Admin page — URL-based space ID + Firestore tasks + per-device display settings.
+// First visit (no spaceId in URL or storage) shows a welcome screen with a
+// "新しいURLを発行する" button that creates the ID and reloads with ?u=<id>.
 
 import * as settingsApi from "./settings.js";
 import * as space from "./space.js";
 import { FirestoreTaskRepository } from "./firestore-repo.js";
 
-// ---- Elements (tasks/settings) ----
+// ---- Welcome ----
+const $welcome = document.getElementById("welcome-card");
+const $createBtn = document.getElementById("create-button");
+const $mainUI = document.getElementById("main-ui");
+const $headerActions = document.getElementById("header-actions");
+
+// ---- Tasks ----
 const $form = document.getElementById("add-form");
 const $input = document.getElementById("add-input");
 const $button = document.getElementById("add-button");
@@ -23,9 +31,7 @@ const $presets = document.getElementById("color-presets");
 const $preview = document.getElementById("preview-text");
 const $reset = document.getElementById("reset-button");
 
-// ---- Resolve space ID + repo ----
-const { id: spaceId } = space.resolveOrCreate();
-const repo = new FirestoreTaskRepository(spaceId);
+let repo = null;
 
 // ---- Toast ----
 let toastTimer = null;
@@ -110,6 +116,7 @@ function renderList(tasks) {
 }
 
 async function refresh() {
+  if (!repo) return;
   try {
     const tasks = await repo.list();
     renderList(tasks);
@@ -122,6 +129,7 @@ async function refresh() {
 // ---- Task handlers ----
 async function onAdd(e) {
   e.preventDefault();
+  if (!repo) return;
   const value = $input.value.trim();
   if (!value) return;
   $button.disabled = true;
@@ -138,6 +146,7 @@ async function onAdd(e) {
 }
 
 async function onComplete(id) {
+  if (!repo) return;
   try {
     await repo.complete(id);
     toast("完了にしました");
@@ -147,6 +156,7 @@ async function onComplete(id) {
 }
 
 async function onDelete(id, text) {
+  if (!repo) return;
   if (!window.confirm(`「${text}」を削除しますか？`)) return;
   try {
     await repo.remove(id);
@@ -176,7 +186,9 @@ async function onShare() {
 }
 
 function onOpenBoard() {
-  const url = space.shareUrl(spaceId, "board");
+  const sid = space.readFromUrl() || space.readFromStorage();
+  if (!sid) return;
+  const url = space.shareUrl(sid, "board");
   window.open(url, "_blank", "noopener");
 }
 
@@ -247,18 +259,40 @@ function onReset() {
 }
 
 // ---- Init ----
-function init() {
+function showWelcome() {
+  $welcome.hidden = false;
+  $mainUI.hidden = true;
+  $headerActions.hidden = true;
+  $createBtn.addEventListener("click", () => {
+    $createBtn.disabled = true;
+    $createBtn.textContent = "発行中…";
+    space.createAndNavigate();
+  });
+}
+
+function bindMainUIEvents() {
   $form.addEventListener("submit", onAdd);
   $shareBtn.addEventListener("click", onShare);
   $boardBtn.addEventListener("click", onOpenBoard);
-
   loadSettingsToUI(settingsApi.load());
   $speed.addEventListener("input", onSpeedChange);
   $size.addEventListener("input", onSizeChange);
   $reset.addEventListener("click", onReset);
+}
 
+function start(spaceId) {
+  $welcome.hidden = true;
+  $mainUI.hidden = false;
+  $headerActions.hidden = false;
+  bindMainUIEvents();
+  repo = new FirestoreTaskRepository(spaceId);
   repo.subscribe(refresh);
   refresh();
 }
 
-init();
+const spaceId = space.resolveExisting();
+if (spaceId) {
+  start(spaceId);
+} else {
+  showWelcome();
+}
